@@ -1920,14 +1920,14 @@ body:has(#gift-modal:not(.hidden)) .gift-bg-star {
     transform: rotate(-3deg);
   }
   .letter-gingham-wrap {
-    padding: 8px 10px;
-    border-radius: 10px;
-    background-size: 14px 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background-size: 14px 14px;
   }
   .letter-photo-inner {
-    width: clamp(96px, 26vw, 120px);
-    aspect-ratio: 1 / 1.05;
-    border-radius: 6px;
+  width: clamp(180px, 48vw, 220px);
+  aspect-ratio: 1 / 1.05;
+  border-radius: 6px;
   }
   .letter-purple-bow {
     width: 52px;
