@@ -190,7 +190,6 @@ function resetQuiz() {
   keypad.classList.remove('hidden-btn');
   retryBtn.classList.add('hidden-btn');
 }
-
 function triggerTitleAnim(animClass) {
   const svg = document.querySelector('.curved-title-svg');
   if (!svg) return;
@@ -236,7 +235,6 @@ function handleChoice(choice) {
     return;
   }
 
-  // When choice === 'yes' -> Show "Are you really excited?" screen with distinct animation
   const archText = document.getElementById('arch-text-path');
   if (archText) {
     archText.textContent = "Are you really excited?";
@@ -245,7 +243,6 @@ function handleChoice(choice) {
   if (textEl) {
     textEl.classList.add('excited-mode');
   }
-  // Trigger Distinct Energetic Pop & Spring Bounce for "Are you really excited?"
   triggerTitleAnim('anim-excited-bounce');
 
   if (danceGif) {
@@ -289,11 +286,10 @@ function handleExcitedChoice() {
     giftEl.classList.remove('hidden-screen');
     giftEl.classList.add('show-screen');
   }
-  // Light celebration confetti burst once new screen transition settles
   setTimeout(launchConfetti, 300);
 }
 
-/* ─── CLOTHESLINE HANGING MEMORIES GALLERY (MATCHING REFERENCE IMAGE 2) ─── */
+/* ─── CLOTHESLINE HANGING MEMORIES GALLERY ─── */
 function openMemoriesModal() {
   const modal = document.getElementById('memories-modal');
   if (modal) {
@@ -326,14 +322,83 @@ function scrollClothesline(direction) {
   }
 }
 
+let lightboxPhotos = [];
+let lightboxIndex = 0;
+
 function focusHangingPhoto(el) {
   if (!el) return;
-  el.classList.add('active-sway');
-  setTimeout(() => {
-    el.classList.remove('active-sway');
-  }, 1000);
+  const img = el.querySelector('.photo-inner-box img');
+  if (!img) return;
+
+  lightboxPhotos = Array.from(
+    document.querySelectorAll('#clothesline-photos-track .hanging-polaroid-item')
+  )
+    .map(card => ({
+      src: card.querySelector('.photo-inner-box img')?.currentSrc ||
+           card.querySelector('.photo-inner-box img')?.src,
+      alt: card.querySelector('.photo-inner-box img')?.alt || 'Memory photo',
+      caption: card.querySelector('.photo-caption-tag')?.textContent?.trim() || ''
+    }))
+    .filter(photo => photo.src);
+
+  lightboxIndex = lightboxPhotos.findIndex(
+    photo => photo.src === (img.currentSrc || img.src)
+  );
+  if (lightboxIndex < 0) lightboxIndex = 0;
+  openPhotoLightbox();
 }
 
+function openPhotoLightbox() {
+  const viewer = document.getElementById('photo-lightbox');
+  if (!viewer || !lightboxPhotos.length) return;
+  viewer.classList.remove('hidden');
+  viewer.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('photo-viewer-open');
+  renderLightboxPhoto();
+}
+
+function renderLightboxPhoto() {
+  const photo = lightboxPhotos[lightboxIndex];
+  if (!photo) return;
+  const image = document.getElementById('photo-lightbox-image');
+  const caption = document.getElementById('photo-lightbox-caption');
+  const counter = document.getElementById('photo-lightbox-counter');
+
+  if (image) {
+    image.src = photo.src;
+    image.alt = photo.alt;
+  }
+  if (caption) caption.textContent = photo.caption;
+  if (counter) {
+    counter.textContent = `${lightboxIndex + 1} / ${lightboxPhotos.length}`;
+  }
+}
+
+function changeLightboxPhoto(direction) {
+  if (!lightboxPhotos.length) return;
+  lightboxIndex =
+    (lightboxIndex + direction + lightboxPhotos.length) % lightboxPhotos.length;
+  renderLightboxPhoto();
+}
+
+function closePhotoLightbox() {
+  const viewer = document.getElementById('photo-lightbox');
+  if (!viewer) return;
+  viewer.classList.add('hidden');
+  viewer.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('photo-viewer-open');
+
+  const image = document.getElementById('photo-lightbox-image');
+  if (image) image.src = '';
+}
+
+document.addEventListener('keydown', event => {
+  const viewer = document.getElementById('photo-lightbox');
+  if (!viewer || viewer.classList.contains('hidden')) return;
+  if (event.key === 'Escape') closePhotoLightbox();
+  if (event.key === 'ArrowRight') changeLightboxPhoto(1);
+  if (event.key === 'ArrowLeft') changeLightboxPhoto(-1);
+});
 /* ─── MAKE A WISH: BIRTHDAY CAKE (BOX 2) ─── */
 let isWishMade = false;
 let blownCandlesCount = 0;
@@ -436,7 +501,7 @@ function openMysteryBox(boxNum) {
 
   launchConfetti();
   const gift = MYSTERY_GIFTS[boxNum] || MYSTERY_GIFTS[3];
-  
+
   const modal = document.getElementById('gift-modal');
   const iconEl = document.getElementById('gift-modal-icon');
   const titleEl = document.getElementById('gift-modal-title');
@@ -509,13 +574,11 @@ function startLetterTypewriter() {
   }
   isLetterTyping = true;
 
-  // Clear target containers
   LETTER_SECTIONS.forEach(sec => {
     const el = document.getElementById(sec.id);
     if (el) el.innerHTML = '';
   });
 
-  // Create or reuse blinking neon cursor
   let cursorEl = document.getElementById('letter-typing-cursor');
   if (!cursorEl) {
     cursorEl = document.createElement('span');
@@ -558,8 +621,11 @@ function startLetterTypewriter() {
         el.appendChild(cursorEl);
       }
 
-      // Natural emotional cadence (pause at punctuation/emojis)
-      const delay = (ch === '.' || ch === '!' || ch === '?' || ch === '💖') ? 110 : (ch === ',' ? 50 : 25);
+      const delay =
+        (ch === '.' || ch === '!' || ch === '?' || ch === '💖')
+          ? 110
+          : (ch === ',' ? 50 : 25);
+
       letterTypewriterTimer = setTimeout(typeNextChar, delay);
     } else {
       secIndex++;
@@ -568,198 +634,137 @@ function startLetterTypewriter() {
     }
   }
 
-  // Brief pause after polaroid drop before typing begins
   letterTypewriterTimer = setTimeout(typeNextChar, 380);
 }
 
+/* ─── LETTER MODAL OPEN / CLOSE ─── */
 function openLetterModal() {
   const modal = document.getElementById('letter-modal');
   if (modal) {
     modal.classList.remove('hidden');
-    const card = modal.querySelector('.letter-card-container');
-    if (card) {
-      card.classList.remove('animate-letter');
-      void card.offsetWidth;
-      card.classList.add('animate-letter');
-    }
-    // Launch dynamic live typewriter typing
     startLetterTypewriter();
   }
 }
 
 function closeLetterModal() {
-  if (letterTypewriterTimer) {
-    clearTimeout(letterTypewriterTimer);
-    letterTypewriterTimer = null;
-  }
-  isLetterTyping = false;
   const modal = document.getElementById('letter-modal');
-  if (modal) modal.classList.add('hidden');
-}
-
-function handleLetterOverlayClick(e) {
-  if (e.target.id === 'letter-modal' || e.target.classList.contains('letter-bg-backdrop')) {
-    closeLetterModal();
+  if (modal) {
+    modal.classList.add('hidden');
+  }
+  if (isLetterTyping) {
+    renderLetterInstant();
   }
 }
 
-// Physical Keyboard Listener
-window.addEventListener('keydown', (e) => {
-  const letterModal = document.getElementById('letter-modal');
-  if (letterModal && !letterModal.classList.contains('hidden')) {
-    if (e.key === 'Escape') {
-      closeLetterModal();
-      return;
+/* ─── CONFETTI CELEBRATION ─── */
+function launchConfetti() {
+  const canvas = document.getElementById('confetti-canvas');
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const pieces = [];
+  const colors = [
+    '#ff4d6d',
+    '#ffb3c1',
+    '#ffd700',
+    '#ffffff',
+    '#e91e63',
+    '#f8a5c2'
+  ];
+
+  for (let i = 0; i < 100; i++) {
+    pieces.push({
+      x: Math.random() * canvas.width,
+      y: -Math.random() * canvas.height,
+      size: Math.random() * 8 + 3,
+      speed: Math.random() * 3 + 2,
+      angle: Math.random() * Math.PI * 2,
+      spin: Math.random() * 0.1 - 0.05,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      opacity: 1
+    });
+  }
+
+  let frame = 0;
+  const maxFrames = 180;
+
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    pieces.forEach(piece => {
+      piece.y += piece.speed;
+      piece.x += Math.sin(piece.angle) * 1.5;
+      piece.angle += piece.spin;
+      piece.opacity -= 0.003;
+
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, piece.opacity);
+      ctx.fillStyle = piece.color;
+      ctx.translate(piece.x, piece.y);
+      ctx.rotate(piece.angle);
+      ctx.fillRect(
+        -piece.size / 2,
+        -piece.size / 2,
+        piece.size,
+        piece.size * 0.65
+      );
+      ctx.restore();
+    });
+
+    frame++;
+    if (frame < maxFrames) {
+      requestAnimationFrame(animate);
+    } else {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
   }
 
-  const cakeModal = document.getElementById('cake-modal');
-  if (cakeModal && !cakeModal.classList.contains('hidden')) {
-    if (e.key === 'Escape') {
-      closeCakeModal();
-      return;
-    } else if (e.key === ' ' || e.key === 'Enter') {
-      makeCakeWish();
-      return;
-    }
-  }
+  animate();
+}
 
-  const memModal = document.getElementById('memories-modal');
-  if (memModal && !memModal.classList.contains('hidden')) {
-    if (e.key === 'ArrowRight' || e.key === ' ') {
-      scrollClothesline(1);
-      return;
-    } else if (e.key === 'ArrowLeft') {
-      scrollClothesline(-1);
-      return;
-    } else if (e.key === 'Escape') {
-      closeMemoriesModal();
-      return;
-    }
-  }
-
-  if (!document.getElementById('quiz-screen').classList.contains('show')) return;
-  if (e.key >= '0' && e.key <= '9') {
-    pressKey(e.key);
-  } else if (e.key === 'Backspace') {
-    deleteDigit();
-  } else if (e.key === 'Enter') {
-    submitBirthdayDate();
+/* ─── WINDOW RESIZE HANDLER ─── */
+window.addEventListener('resize', () => {
+  const canvas = document.getElementById('confetti-canvas');
+  if (canvas) {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
   }
 });
 
-/* ─── STAGE COUNTDOWN CLOCK (5 SECONDS) ─── */
-const hhEl = document.getElementById('hh');
-const mmEl = document.getElementById('mm');
-const ssEl = document.getElementById('ss');
-const secHand = document.getElementById('second-hand');
-const minHand = document.getElementById('minute-hand');
-const hrHand = document.getElementById('hour-hand');
+/* ─── MODAL BACKDROP CLICKS ─── */
+document.addEventListener('click', event => {
+  const memoriesModal = document.getElementById('memories-modal');
+  const cakeModal = document.getElementById('cake-modal');
+  const giftModal = document.getElementById('gift-modal');
+  const letterModal = document.getElementById('letter-modal');
 
-const pad = n => String(n).padStart(2, '0');
-let countLeft = 5;
-let countdownTimer = null;
-
-function updateClock(h, m, s) {
-  hhEl.textContent = pad(h);
-  mmEl.textContent = pad(m);
-  ssEl.textContent = pad(s);
-
-  secHand.style.transform = `rotate(${s === 0 ? 360 : s * 6}deg)`;
-  minHand.style.transform = `rotate(${(m + s / 60) * 6}deg)`;
-  hrHand.style.transform  = `rotate(${((h % 12) + m / 60) * 30}deg)`;
-}
-
-function startCountdown() {
-  countLeft = 5;
-  updateClock(11, 59, 55);
-
-  countdownTimer = setInterval(() => {
-    countLeft--;
-    if (countLeft > 0) {
-      updateClock(11, 59, 60 - countLeft);
-      playTick();
-    } else {
-      clearInterval(countdownTimer);
-      updateClock(12, 0, 0);
-      playMidnightChime();
-      setTimeout(triggerMidnight, 700);
-    }
-  }, 1000);
-}
-
-/* ─── MIDNIGHT REVEAL ─── */
-function triggerMidnight() {
-  const burst = document.getElementById('midnight-burst');
-  if (burst) burst.classList.add('flash');
-  setTimeout(() => {
-    const cl = document.getElementById('curtain-left');
-    const cr = document.getElementById('curtain-right');
-    const cw = document.getElementById('countdown-wrap');
-    if (cl) cl.classList.add('open');
-    if (cr) cr.classList.add('open');
-    if (cw) cw.classList.add('hidden');
-  }, 400);
-  setTimeout(() => {
-    const qs = document.getElementById('quiz-screen');
-    if (qs) qs.classList.add('show');
-  }, 1000);
-
-  // Performance Optimization: Unload heavy curtain and background particle layers once off-screen
-  setTimeout(() => {
-    const cl = document.getElementById('curtain-left');
-    const cr = document.getElementById('curtain-right');
-    const cw = document.getElementById('countdown-wrap');
-    const burstEl = document.getElementById('midnight-burst');
-    const bgAmb = document.getElementById('bg-ambient');
-    if (cl) cl.style.display = 'none';
-    if (cr) cr.style.display = 'none';
-    if (cw) cw.style.display = 'none';
-    if (burstEl) burstEl.style.display = 'none';
-    if (bgAmb) bgAmb.style.display = 'none';
-  }, 2600);
-}
-
-/* ─── CONFETTI SYSTEM (OPTIMIZED & LEAK-FREE) ─── */
-function launchConfetti() {
-  const isMobile = window.innerWidth <= 768;
-  const count = isMobile ? 35 : 65;
-  const colors = ['#ff6b9d','#ffd700','#ff4db8','#00bcd4','#69f0ae','#ff5722'];
-  for (let i = 0; i < count; i++) {
-    const c = document.createElement('div');
-    c.className = 'confetti-piece';
-    const sz = Math.random() * (isMobile ? 6 : 8) + 6;
-    const dur = Math.random() * 2 + 2;
-    const delay = Math.random() * 1.2;
-    c.style.cssText = `left:${Math.random()*100}%;top:-20px;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};--cf-d:${dur}s;--cf-delay:${delay}s;will-change:transform,opacity;`;
-    document.body.appendChild(c);
-
-    // Automatically remove element from DOM after animation completes to avoid memory leak & lag
-    setTimeout(() => {
-      c.remove();
-    }, (dur + delay + 0.3) * 1000);
+  if (event.target === memoriesModal) {
+    closeMemoriesModal();
   }
-}
+  if (event.target === cakeModal) {
+    closeCakeModal();
+  }
+  if (event.target === giftModal) {
+    closeGiftModal();
+  }
+  if (event.target === letterModal) {
+    closeLetterModal();
+  }
+});
 
-/* ─── MOUSE TRAIL HEARTS (DESKTOP ONLY) ─── */
-let lastTrail = 0;
-if (window.matchMedia('(pointer: fine)').matches) {
-  document.addEventListener('mousemove', e => {
-    const now = Date.now();
-    const cl = document.getElementById('curtain-left');
-    if (now - lastTrail < 140 || !cl || !cl.classList.contains('open')) return;
-    lastTrail = now;
-    const em = ['💖','💗','💕','✨','🌸'];
-    const h = document.createElement('div');
-    h.className = 'trail-heart';
-    h.textContent = em[Math.floor(Math.random() * em.length)];
-    h.style.left = (e.clientX - 10) + 'px';
-    h.style.top = (e.clientY - 10) + 'px';
-    document.body.appendChild(h);
-    setTimeout(() => h.remove(), 700);
-  });
-}
+/* ─── GLOBAL ESCAPE KEY ─── */
+document.addEventListener('keydown', event => {
+  if (event.key !== 'Escape') return;
 
-/* ─── START ON LOAD ─── */
-startCountdown();
+  closeMemoriesModal();
+  closeCakeModal();
+  closeGiftModal();
+  closeLetterModal();
+});
 
+/* ─── END OF SCRIPT ─── */
