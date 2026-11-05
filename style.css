@@ -605,12 +605,12 @@ html, body {
   position: absolute;
   inset: 0;
 
-  background-image: url("assets/shinchan-birthday.png");
+  background-image: url("assets/noufel1.jpg");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
 
-  opacity: 0.25;
+  opacity: 0.30;
   z-index: 0;
   pointer-events: none;
 }
